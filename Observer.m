@@ -35,8 +35,7 @@ C = [1 0];
 sys = ss(A,B,C,[]);
 
 %% OBSERVER
-P = [omega_r*1, omega_r*0];
-% P = [omega_r*1];
+P = [-omega_r*2, -omega_r*1.5];
 
 L = place(A',C',P)';
 
@@ -47,7 +46,7 @@ sysObs = ss(At,Bt,Ct,[]);
 
 %% SIMULATION
 t_sample = 1e-3;
-t = (0:t_sample:2)';
+t = (0:t_sample:1)';
 u = zeros(length(t),1);
 u_index = round(0.5/t_sample);
 
@@ -86,6 +85,26 @@ ylabel('Current i / A')
 fig2 = figure('Position',[100 100 1200 800]);
 subplot(2,2,1)
 hold on
+plot(tOut, real(x(:,1)),'DisplayName','i_S (alpha)')
+plot(tOut, real(xhat(:,2)),'--','DisplayName','i_S (estimated - alpha)')
+hold off
+legend
+xlabel('Time / sec')
+ylabel('Stator current i_S / A')
+title('Stator current (alpha)')
+
+subplot(2,2,2)
+hold on
+plot(tOut, imag(x(:,1)),'DisplayName','i_S (beta)')
+plot(tOut, imag(xhat(:,2)),'--','DisplayName','i_S (estimated - beta)')
+hold off
+legend
+xlabel('Time / sec')
+ylabel('Stator current i_S / A')
+title('Stator current (beta)')
+
+subplot(2,2,3)
+hold on
 plot(tOut, real(x(:,2)),'DisplayName','Stator flux (alpha)')
 plot(tOut, real(xhat(:,3)),'--','DisplayName','Stator flex (estimated - alpha)')
 hold off
@@ -94,13 +113,7 @@ xlabel('Time / sec')
 ylabel('Stator flux / C')
 title('Stator flux (alpha)')
 
-subplot(2,2,2)
-plot(tOut, real(x(:,2)) - real(xhat(:,3)))
-xlabel('Time / sec')
-ylabel('Stator flux / C')
-title('Estimation error of stator flux (alpha)')
-
-subplot(2,2,3)
+subplot(2,2,4)
 hold on
 plot(tOut, imag(x(:,2)),'DisplayName','Stator flux (beta)')
 plot(tOut, imag(xhat(:,3)),'--','DisplayName','Stator flex (estimated - beta)')
@@ -108,16 +121,12 @@ hold off
 legend
 xlabel('Time / sec')
 ylabel('Stator flux / C')
-title('Stator flux (alpha)')
+title('Stator flux (beta)')
 
-subplot(2,2,4)
-plot(tOut, imag(x(:,2)) - imag(xhat(:,3)))
-xlabel('Time / sec')
-ylabel('Stator flux / C')
-title('Estimation error of stator flux (beta)')
 
 figure
 hold on
 pzmap(sys)
 pzmap(sysObs)
+legend('sys','observer')
 hold off

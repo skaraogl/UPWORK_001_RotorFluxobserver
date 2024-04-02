@@ -95,13 +95,6 @@ ylabel('Stator flux / C')
 title('Stator flux (alpha)')
 
 subplot(2,2,2)
-plot(tOut, real(x(:,2)) - real(xhat(:,3)))
-legend
-xlabel('Time / sec')
-ylabel('Stator flux / C')
-title('Estimation error of stator flux (alpha)')
-
-subplot(2,2,3)
 hold on
 plot(tOut, imag(x(:,2)),'DisplayName','Stator flux (beta)')
 plot(tOut, imag(xhat(:,3)),'--','DisplayName','Stator flex (estimated - beta)')
@@ -111,11 +104,29 @@ xlabel('Time / sec')
 ylabel('Stator flux / C')
 title('Stator flux (alpha)')
 
-subplot(2,2,4)
-plot(tOut, imag(x(:,2)) - imag(xhat(:,3)))
+subplot(2,2,1)
+hold on
+plot(tOut, real(x(:,2)),'DisplayName','Stator flux (alpha)')
+plot(tOut, real(xhat(:,3)),'--','DisplayName','Stator flex (estimated - alpha)')
+hold off
 legend
 xlabel('Time / sec')
 ylabel('Stator flux / C')
-title('Estimation error of stator flux (beta)')
+title('Stator flux (alpha)')
 
-figure
+subplot(2,2,2)
+hold on
+plot(tOut, imag(x(:,2)),'DisplayName','Stator flux (beta)')
+plot(tOut, imag(xhat(:,3)),'--','DisplayName','Stator flex (estimated - beta)')
+hold off
+legend
+xlabel('Time / sec')
+ylabel('Stator flux / C')
+title('Stator flux (alpha)')
+
+
+% figure
+% hold on
+% pzmap(sys)
+% pzmap(sysObs)
+% hold off
