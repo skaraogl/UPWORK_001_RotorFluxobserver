@@ -32,12 +32,18 @@ A = [a11 a12; a21 0];
 B = [lambda*L_r; 1];
 C = [1 0];
 
-sysIm = ss(A,B,C,[]);
+sys = ss(A,B,C,[]);
 
-A_alpha = [-lambda*(R_s*L_r + R_r*L_s) lambda*R_r; -R_s 0];
-A_beta = [omega_r -lambda*L_r*omega_r; -R_s 0];
-sysAlpha = ss(A_alpha, B, C,[]);
-sysBeta = ss(A_beta, B, C, []);
+%% OBSERVER
+P = [omega_r*1, omega_r*0];
+% P = [omega_r*1];
+
+L = place(A',C',P)';
+
+At = A - L*C;
+Bt = [B, L];
+Ct = [C; eye(2)];
+sysObs = ss(At,Bt,Ct,[]);
 
 %% SIMULATION
 t_sample = 1e-3;
@@ -50,10 +56,12 @@ u_index = round(0.5/t_sample);
 % Sinosidial value ------
 u(u_index:end) = u_S*sin(2*pi*f.*t(1:end-u_index+1)) + 1i*u_S*cos(2*pi*f.*t(1:end-u_index+1));
 
-[y, tOut] = lsim(sysIm,u,t);
+[y, ~,x] = lsim(sys,u,t);
+[xhat, tOut] = lsim(sysObs,[u,y],t);
 
 %% PLOTTING
-fig = figure('Position',[100 100 1200 600]);
+% ----------- FIGURE 1 -----------
+fig1 = figure('Position',[100 100 1200 600]);
 
 subplot(1,2,1)
 hold on
@@ -73,9 +81,43 @@ legend
 xlabel('Time / sec')
 ylabel('Current i / A')
 
+% ----------- FIGURE 2 -----------
+
+fig2 = figure('Position',[100 100 1200 800]);
+subplot(2,2,1)
+hold on
+plot(tOut, real(x(:,2)),'DisplayName','Stator flux (alpha)')
+plot(tOut, real(xhat(:,3)),'--','DisplayName','Stator flex (estimated - alpha)')
+hold off
+legend
+xlabel('Time / sec')
+ylabel('Stator flux / C')
+title('Stator flux (alpha)')
+
+subplot(2,2,2)
+plot(tOut, real(x(:,2)) - real(xhat(:,3)))
+xlabel('Time / sec')
+ylabel('Stator flux / C')
+title('Estimation error of stator flux (alpha)')
+
+subplot(2,2,3)
+hold on
+plot(tOut, imag(x(:,2)),'DisplayName','Stator flux (beta)')
+plot(tOut, imag(xhat(:,3)),'--','DisplayName','Stator flex (estimated - beta)')
+hold off
+legend
+xlabel('Time / sec')
+ylabel('Stator flux / C')
+title('Stator flux (alpha)')
+
+subplot(2,2,4)
+plot(tOut, imag(x(:,2)) - imag(xhat(:,3)))
+xlabel('Time / sec')
+ylabel('Stator flux / C')
+title('Estimation error of stator flux (beta)')
+
 figure
 hold on
-pzmap(sysIm)
-pzmap(sysAlpha)
-pzmap(sysBeta)
+pzmap(sys)
+pzmap(sysObs)
 hold off
