@@ -1,27 +1,9 @@
 clear;
 close all;
 clc;
+
 %% PARAMETERS
-% Electrical rotor rpm / rpm
-N_r = 1500;
-% Electrical rotor speed / rad/sec
-omega_r = 2*pi*(N_r/60);
-% Applied voltage / V
-u_S = 780;
-% Magnetizing/mutual, sator and rotor inductance / H
-L_m = 34.7e-3;
-L_s = 8e-4 + L_m;
-L_r = 8e-4 + L_m;
-% Stator and rotor resistance / Ohm
-R_s = 0.087;
-R_r = 0.228;
-
-lambda = 1/(L_s*L_r - L_m^2);
-
-% Number of pole pairs
-P = 2;
-% Electrical stator frequency / Hz
-f = (P*N_r)/120;
+Parameters;
 
 %% STATE SPACE MODELS
 a11 = -lambda*(R_s*L_r + R_r*L_s)+1i*omega_r;
@@ -44,6 +26,12 @@ Bt = [B, L];
 Ct = [C; eye(2)];
 sysObs = ss(At,Bt,Ct,[]);
 
+%% EXTENDED OBSERVER
+b = -2000*12.5;
+L_ext = -[2*b; b/(lambda*L_r)];
+
+sysOE = ss((A - L_ext*C),[B,L_ext],[C;eye(2)],[]);
+
 %% SIMULATION
 t_sample = 1e-3;
 t = (0:t_sample:1)';
@@ -56,7 +44,12 @@ u_index = round(0.5/t_sample);
 u(u_index:end) = u_S*sin(2*pi*f.*t(1:end-u_index+1)) + 1i*u_S*cos(2*pi*f.*t(1:end-u_index+1));
 
 [y, ~,x] = lsim(sys,u,t);
-[xhat, tOut] = lsim(sysObs,[u,y],t);
+[xhat, ~] = lsim(sysObs,[u,y],t);
+[xhatE,tOut] = lsim(sysOE,[u,y],t);
+
+%% SPLIT IMAGINERY AND REAL STATE SPACE MODEL
+sysIm = ss(imag(A),imag(B),[0 1],[]);
+sysRe = ss(real(A),real(B),[0 1],[]);
 
 %% PLOTTING
 % ----------- FIGURE 1 -----------
@@ -83,50 +76,39 @@ ylabel('Current i / A')
 % ----------- FIGURE 2 -----------
 
 fig2 = figure('Position',[100 100 1200 800]);
-subplot(2,2,1)
+subplot(1,2,1)
 hold on
-plot(tOut, real(x(:,1)),'DisplayName','i_S (alpha)')
-plot(tOut, real(xhat(:,2)),'--','DisplayName','i_S (estimated - alpha)')
+plot(tOut, (x(:,1)),'Color','#0007D8','LineWidth',1.5,'DisplayName','i_S')
+plot(tOut, (xhat(:,2)),'Color','#0C7616','LineWidth',1.5,'LineStyle','--','DisplayName','i_S (observer)')
+plot(tOut, (xhatE(:,2)),'Color','#000000','LineWidth',1.5,'LineStyle','--','DisplayName','i_S (ext. observer)')
 hold off
 legend
 xlabel('Time / sec')
 ylabel('Stator current i_S / A')
 title('Stator current (alpha)')
 
-subplot(2,2,2)
+subplot(1,2,2)
 hold on
-plot(tOut, imag(x(:,1)),'DisplayName','i_S (beta)')
-plot(tOut, imag(xhat(:,2)),'--','DisplayName','i_S (estimated - beta)')
-hold off
-legend
-xlabel('Time / sec')
-ylabel('Stator current i_S / A')
-title('Stator current (beta)')
-
-subplot(2,2,3)
-hold on
-plot(tOut, real(x(:,2)),'DisplayName','Stator flux (alpha)')
-plot(tOut, real(xhat(:,3)),'--','DisplayName','Stator flex (estimated - alpha)')
+plot(tOut, (x(:,2)),'Color','#0007D8','LineWidth',1.5,'DisplayName','Stator flux')
+plot(tOut, (xhat(:,3)),'Color','#0C7616','LineWidth',1.5,'LineStyle','--','DisplayName','Stator flex (observer)')
+plot(tOut, (xhatE(:,3)),'Color','#000000','LineWidth',1.5,'LineStyle','--','DisplayName','Stator flex (ext. observer)')
 hold off
 legend
 xlabel('Time / sec')
 ylabel('Stator flux / C')
 title('Stator flux (alpha)')
 
-subplot(2,2,4)
-hold on
-plot(tOut, imag(x(:,2)),'DisplayName','Stator flux (beta)')
-plot(tOut, imag(xhat(:,3)),'--','DisplayName','Stator flex (estimated - beta)')
-hold off
-legend
-xlabel('Time / sec')
-ylabel('Stator flux / C')
-title('Stator flux (beta)')
-
 
 figure
 hold on
 pzmap(sys)
 pzmap(sysObs)
+% pzmap(sysOE)
 legend('sys','observer')
+hold off
+
+figure
+hold on
+rlocus(sysRe)
+rlocus(sysIm)
 hold off
