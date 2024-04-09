@@ -27,7 +27,8 @@ Ct = [C; eye(2)];
 sysObs = ss(At,Bt,Ct,[]);
 
 %% EXTENDED OBSERVER
-b = -2000*12.5;
+% b = -2000*12.5;
+b = -50;
 L_ext = -[2*b; b/(lambda*L_r)];
 
 sysOE = ss((A - L_ext*C),[B,L_ext],[C;eye(2)],[]);
@@ -97,18 +98,3 @@ legend
 xlabel('Time / sec')
 ylabel('Stator flux / C')
 title('Stator flux (alpha)')
-
-
-figure
-hold on
-pzmap(sys)
-pzmap(sysObs)
-% pzmap(sysOE)
-legend('sys','observer')
-hold off
-
-figure
-hold on
-rlocus(sysRe)
-rlocus(sysIm)
-hold off
